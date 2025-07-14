@@ -1,0 +1,72 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: slow-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx.conf:/etc/nginx/sites-available/default
+    ports:
+      - "8000:80"
+    networks:
+      - slow-network
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=slow_db
+      - DB_USERNAME=slow_user
+      - DB_PASSWORD=secret
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  db:
+    image: postgres:16
+    container_name: slow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: slow_db
+      POSTGRES_USER: slow_user
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - slow-network
+
+  redis:
+    image: redis:alpine
+    container_name: slow-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - slow-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: slow-pgadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    networks:
+      - slow-network
+    depends_on:
+      - db
+
+volumes:
+  dbdata:
+
+networks:
+  slow-network:
+    driver: bridge
