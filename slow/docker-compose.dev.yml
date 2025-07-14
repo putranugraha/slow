@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: slow-dev-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx.conf:/etc/nginx/sites-available/default
+    ports:
+      - "8001:80"
+    networks:
+      - slow-dev-network
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16
+    container_name: slow-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: slow_db
+      POSTGRES_USER: slow_user
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "55432:5432"
+    networks:
+      - slow-dev-network
+
+  redis:
+    image: redis:alpine
+    container_name: slow-dev-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    networks:
+      - slow-dev-network
+
+networks:
+  slow-dev-network:
+    driver: bridge
